@@ -33,3 +33,28 @@ steps:
     pytest
   displayName: 'pytest'
   
+- script: python -m pip install --upgrade pip setuptools wheel
+  displayName: 'Install tools'
+  
+- script: pip install -r requirements.txt
+  displayName: 'Install requirements'
+
+- script: |
+    pip install pytest pytest-azurepipelines
+    pip install pytest-cov
+    pytest --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml
+  displayName: 'pytest'
+
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFiles: '**/test-*.xml'
+    testRunTitle: 'Publish test results for Python $(python.version)'
+  
+- task: TwineAuthenticate@0
+  inputs:
+    artifactFeed: '<Azure Artifacts feed name>'
+    pythonUploadServiceConnection: '<twine service connection from external organization>'
+  
+- script: |
+   twine upload -r "<feed or service connection name>" --config-file $(PYPIRC_PATH) <package path/files>
